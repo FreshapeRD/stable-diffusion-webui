@@ -98,7 +98,7 @@ def save_image_from_pil(image):
         })
         image.save(filepath, format=file_format.upper(), exif=exif_bytes, quality=opts.jpeg_quality)
 
-    return filename
+    return f'https://usgpu7.utai.com/{filename}'
 
 
 def encode_pil_to_base64(image):
