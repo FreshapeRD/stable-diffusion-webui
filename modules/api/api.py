@@ -29,7 +29,7 @@ from modules import devices
 from typing import Dict, List, Any
 import piexif
 import piexif.helper
-
+import uuid
 
 def upscaler_to_index(name: str):
     try:
@@ -79,8 +79,8 @@ def save_image_from_pil(image):
     file_format = opts.samples_format.lower()
     if file_format not in ['jpg', 'jpeg', 'png']:
         raise HTTPException(status_code=500, detail='Invalid image format')
-
-    filename = f'image.{file_format}'
+    random_filename = str(uuid.uuid4())
+    filename = f'{random_filename}.{file_format}'
     filepath = os.path.join(outDir, filename)
     
     if file_format == 'png':
