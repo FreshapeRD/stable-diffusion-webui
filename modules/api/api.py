@@ -69,6 +69,37 @@ def decode_base64_to_image(encoding):
     except Exception as e:
         raise HTTPException(status_code=500, detail="Invalid encoded image") from e
 
+import os
+
+def save_image_from_pil(image):
+    outDir = "/data/tempTxt2Image/"
+    if not os.path.exists(outDir):
+        os.makedirs(outDir)
+
+    file_format = opts.samples_format.lower()
+    if file_format not in ['jpg', 'jpeg', 'png']:
+        raise HTTPException(status_code=500, detail='Invalid image format')
+
+    filename = f'image.{file_format}'
+    filepath = os.path.join(outDir, filename)
+    
+    if file_format == 'png':
+        use_metadata = False
+        metadata = PngImagePlugin.PngInfo()
+        for key, value in image.info.items():
+            if isinstance(key, str) and isinstance(value, str):
+                metadata.add_text(key, value)
+                use_metadata = True
+        image.save(filepath, format='PNG', pnginfo=(metadata if use_metadata else None), quality=opts.jpeg_quality)
+    else:
+        parameters = image.info.get('parameters', None)
+        exif_bytes = piexif.dump({
+            'Exif': { piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(parameters or '', encoding='unicode') }
+        })
+        image.save(filepath, format=file_format.upper(), exif=exif_bytes, quality=opts.jpeg_quality)
+
+    return filename
+
 
 def encode_pil_to_base64(image):
     with io.BytesIO() as output_bytes:
@@ -335,7 +366,7 @@ class Api:
                 processed = process_images(p)
             shared.state.end()
 
-        b64images = list(map(encode_pil_to_base64, processed.images)) if send_images else []
+        b64images = list(map(save_image_from_pil, processed.images)) if send_images else []
 
         return models.TextToImageResponse(images=b64images, parameters=vars(txt2imgreq), info=processed.js())
 
